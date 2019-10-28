@@ -66,7 +66,7 @@ class AndroidNdkConan(ConanFile):
         self.copy("WrappedToolchain.cmake")
 
     def package_info(self):
-        ndk_home = os.environ["ANDROID_NDK_HOME"]
+        ndk_home = self.env.get("ANDROID_NDK_HOME", None) or os.environ["ANDROID_NDK_HOME"]
         self.env_info.NDK_HOME = ndk_home
         self._ndk_root = os.path.join(ndk_home, "toolchains", "llvm", "prebuilt", self._host)
         self.env_info.NDK_ROOT = self._ndk_root
