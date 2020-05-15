@@ -1,5 +1,7 @@
 from conans import ConanFile
 import os
+import re
+import sys
 
 class AndroidNdkConan(ConanFile):
     name = "android_ndk"
@@ -67,6 +69,23 @@ class AndroidNdkConan(ConanFile):
 
     def package_info(self):
         ndk_home = self.env.get("ANDROID_NDK_HOME", None) or os.environ["ANDROID_NDK_HOME"]
+
+        revision_pattern = re.compile("Pkg.Revision = (.+)")
+        try:
+            ndk_revision = None
+            with open(os.path.join(ndk_home, "source.properties")) as source:
+                for line in source.readlines():
+                    match = revision_pattern.match(line)
+                    if match is not None:
+                        ndk_revision = match.group(1)
+            if ndk_revision is not None:
+                self.output.info("Detected ndk revision is {}".format(ndk_revision))
+                self.user_info.ndk_revision = ndk_revision
+            else:
+                raise RuntimeError("Cannot find revision")
+        except:
+            raise RuntimeError("Cannot determine ndk revision").with_traceback(sys.exc_info()[2])
+
         self.env_info.NDK_HOME = ndk_home
         self._ndk_root = os.path.join(ndk_home, "toolchains", "llvm", "prebuilt", self._host)
         self.env_info.NDK_ROOT = self._ndk_root
