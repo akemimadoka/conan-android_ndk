@@ -8,24 +8,16 @@ class AndroidNdkConan(ConanFile):
     name = "android_ndk"
     version = "0.1"
     settings = {"os_build": ["Windows", "Linux", "Macos"],
-                "arch_build": ["x86", "x86_64"]}
-    settings_target = {"compiler": ["clang"],
-                       "os": ["Android"],
-                       "arch": ["x86", "x86_64", "armv7", "armv8"]}
+                "arch_build": ["x86", "x86_64"],
+                "compiler": ["clang"],
+                "os": ["Android"],
+                "arch": ["x86", "x86_64", "armv7", "armv8"]}
     options = {"NDKRootPath": "ANY"}
     default_options = {"NDKRootPath": None}
 
     _ndk_root = None
     no_copy_source = True
-    exports_sources = ["WrappedToolchain.cmake.in"]
-
-    @property
-    def _arch(self):
-        return self.settings_target.arch if self.settings_target is not None else self.settings.arch
-
-    @property
-    def _api_level(self):
-        return self.settings_target.os.api_level if self.settings_target is not None else self.settings.os.api_level
+    exports_sources = ["WrappedToolchain.cmake"]
 
     @property
     def _ndk_home(self):
@@ -43,15 +35,15 @@ class AndroidNdkConan(ConanFile):
         return {"x86": "x86",
                 "x86_64": "x86_64",
                 "armv7": "armeabi-v7a",
-                "armv8": "arm64-v8a"}.get(str(self._arch))
+                "armv8": "arm64-v8a"}.get(str(self.settings.arch))
 
     @property
     def _llvm_triplet(self):
         arch = {'armv7': 'arm',
                 'armv8': 'aarch64',
                 'x86': 'i686',
-                'x86_64': 'x86_64'}.get(str(self._arch))
-        abi = 'androideabi' if self._arch == 'armv7' else 'android'
+                'x86_64': 'x86_64'}.get(str(self.settings.arch))
+        abi = 'androideabi' if self.settings.arch == 'armv7' else 'android'
         return '%s-linux-%s' % (arch, abi)
 
     @property
@@ -59,8 +51,8 @@ class AndroidNdkConan(ConanFile):
         arch = {'armv7': 'armv7a',
                 'armv8': 'aarch64',
                 'x86': 'i686',
-                'x86_64': 'x86_64'}.get(str(self._arch))
-        abi = 'androideabi' if self._arch == 'armv7' else 'android'
+                'x86_64': 'x86_64'}.get(str(self.settings.arch))
+        abi = 'androideabi' if self.settings.arch == 'armv7' else 'android'
         return '%s-linux-%s' % (arch, abi)
 
     @property
@@ -70,7 +62,7 @@ class AndroidNdkConan(ConanFile):
     def _tool_name(self, tool):
         if 'clang' in tool:
             suffix = '.cmd' if self.settings.os_build == 'Windows' else ''
-            return '%s%s-%s%s' % (self._clang_triplet, self._api_level, tool, suffix)
+            return '%s%s-%s%s' % (self._clang_triplet, self.settings.os.api_level, tool, suffix)
         else:
             suffix = '.exe' if self.settings.os_build == 'Windows' else ''
             return '%s-%s%s' % (self._llvm_triplet, tool, suffix)
@@ -82,10 +74,7 @@ class AndroidNdkConan(ConanFile):
         return path
 
     def package(self):
-        with open(os.path.join(self.source_folder, "WrappedToolchain.cmake.in")) as template_file:
-            with open(os.path.join(self.package_folder, "WrappedToolchain.cmake"), "w") as toolchain_file:
-                for line in template_file.readlines():
-                    toolchain_file.write(line.replace("@ANDROID_NDK_HOME@", self._ndk_home))
+        self.copy("WrappedToolchain.cmake")
 
     def package_info(self):
         ndk_home = self._ndk_home
@@ -120,11 +109,10 @@ class AndroidNdkConan(ConanFile):
         self.env_info.CONAN_CMAKE_TOOLCHAIN_FILE = os.path.join(
             self.package_folder, "WrappedToolchain.cmake")
         self.env_info.ANDROID_NATIVE_API_LEVEL = str(
-            self._api_level)
+            self.settings.os.api_level)
         self.env_info.ANDROID_TOOLCHAIN = "clang"
         self.env_info.ANDROID_ABI = self._android_abi
-        self.env_info.ANDROID_STL = str(
-            self.settings_target.compiler.libcxx if self.settings_target is not None else self.settings.compiler.libcxx)
+        self.env_info.ANDROID_STL = str(self.settings.compiler.libcxx)
         self.env_info.CMAKE_FIND_ROOT_PATH = sysroot
         self.env_info.CMAKE_FIND_ROOT_PATH_MODE_PROGRAM = "BOTH"
         self.env_info.CMAKE_FIND_ROOT_PATH_MODE_LIBRARY = "BOTH"
