@@ -5,7 +5,7 @@ os=Android
 os.api_level=21
 arch=armv8
 compiler=clang
-compiler.version=12
+compiler.version=14
 compiler.libcxx=c++_shared
 
 [options]
