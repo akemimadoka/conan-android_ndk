@@ -133,3 +133,5 @@ class AndroidNdkConan(ConanFile):
         self.env_info.OBJDUMP = self._define_tool_var('OBJDUMP', 'objdump')
         self.env_info.READELF = self._define_tool_var('READELF', 'readelf')
         self.env_info.ELFEDIT = self._define_tool_var('ELFEDIT', 'elfedit')
+
+        self.conf_info.define("tools.android:ndk_path", ndk_home)
